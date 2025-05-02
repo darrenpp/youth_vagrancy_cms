@@ -1,0 +1,190 @@
+{% extends 'base.html' %}
+{% block title %}Statistics{% endblock %}
+{% block content %}
+<div class="content-header">
+    <h1>Real-Time Statistics</h1>
+</div>
+
+{% if messages %}
+    {% for message in messages %}
+        <div class="alert alert-{{ message.tags }} alert-dismissible">
+            <button type="button" class="close" data-dismiss="alert">&times;</button>
+            {{ message }}
+        </div>
+    {% endfor %}
+{% endif %}
+
+<div class="row">
+    <!-- Pie Chart: Electorate Distribution -->
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">Vagrants by Electorate</h3>
+            </div>
+            <div class="card-body">
+                {% if electorate_labels and electorate_counts %}
+                    <canvas id="electoratePieChart"></canvas>
+                {% else %}
+                    <p class="text-muted">No electorate data available.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    <!-- Bar Chart: Age Distribution -->
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">Age Distribution</h3>
+            </div>
+            <div class="card-body">
+                {% if age_labels and age_counts %}
+                    <canvas id="ageBarChart"></canvas>
+                {% else %}
+                    <p class="text-muted">No age distribution data available.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+<div class="row">
+    <!-- Map: Vagrants by Electorate -->
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">Vagrants by Location</h3>
+            </div>
+            <div class="card-body">
+                {% if map_data %}
+                    <div id="map" style="height: 400px;"></div>
+                {% else %}
+                    <p class="text-muted">No location data available.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Helper function to generate random colors for pie chart
+function getRandomColor() {
+    const letters = '0123456789ABCDEF';
+    let color = '#';
+    for (let i = 0; i < 6; i++) {
+        color += letters[Math.floor(Math.random() * 16)];
+    }
+    return color;
+}
+
+// Initialize charts and map only if data is available
+document.addEventListener('DOMContentLoaded', function() {
+    {% if electorate_labels and electorate_counts %}
+        try {
+            const electorateLabels = {{ electorate_labels|safe }};
+            const electorateCounts = {{ electorate_counts|safe }};
+
+            // Validate data lengths
+            if (electorateLabels.length !== electorateCounts.length) {
+                console.error('Electorate labels and counts length mismatch');
+                document.getElementById('electoratePieChart').parentElement.innerHTML =
+                    '<p class="text-danger">Error: Invalid electorate data.</p>';
+            } else {
+                // Generate colors dynamically
+                const colors = electorateLabels.map(() => getRandomColor());
+
+                const electoratePieChart = new Chart(document.getElementById('electoratePieChart'), {
+                    type: 'pie',
+                    data: {
+                        labels: electorateLabels,
+                        datasets: [{
+                            data: electorateCounts,
+                            backgroundColor: colors,
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        plugins: {
+                            legend: { position: 'top' },
+                            title: { display: true, text: 'Vagrants by Electorate' }
+                        }
+                    }
+                });
+            }
+        } catch (e) {
+            console.error('Error initializing pie chart:', e);
+            document.getElementById('electoratePieChart').parentElement.innerHTML =
+                '<p class="text-danger">Error loading electorate chart.</p>';
+        }
+    {% endif %}
+
+    {% if age_labels and age_counts %}
+        try {
+            const ageLabels = {{ age_labels|safe }};
+            const ageCounts = {{ age_counts|safe }};
+
+            // Validate data lengths
+            if (ageLabels.length !== ageCounts.length) {
+                console.error('Age labels and counts length mismatch');
+                document.getElementById('ageBarChart').parentElement.innerHTML =
+                    '<p class="text-danger">Error: Invalid age data.</p>';
+            } else {
+                const ageBarChart = new Chart(document.getElementById('ageBarChart'), {
+                    type: 'bar',
+                    data: {
+                        labels: ageLabels,
+                        datasets: [{
+                            label: 'Number of Vagrants',
+                            data: ageCounts,
+                            backgroundColor: '#36A2EB',
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        plugins: {
+                            legend: { display: false },
+                            title: { display: true, text: 'Age Distribution' }
+                        },
+                        scales: {
+                            y: { beginAtZero: true }
+                        }
+                    }
+                });
+            }
+        } catch (e) {
+            console.error('Error initializing bar chart:', e);
+            document.getElementById('ageBarChart').parentElement.innerHTML =
+                '<p class="text-danger">Error loading age chart.</p>';
+        }
+    {% endif %}
+
+    {% if map_data %}
+        try {
+            const map = L.map('map').setView([-9.465, 147.155], 12);
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+            }).addTo(map);
+
+            const mapData = {{ map_data|safe }};
+            mapData.forEach(function(item) {
+                // Validate coordinates
+                if (item.coords && Array.isArray(item.coords) && item.coords.length === 2 &&
+                    typeof item.coords[0] === 'number' && typeof item.coords[1] === 'number') {
+                    L.marker(item.coords).addTo(map)
+                        .bindPopup(`<b>${item.electorate}</b><br>Vagrants: ${item.count}`);
+                } else {
+                    console.warn(`Invalid coordinates for ${item.electorate}`);
+                }
+            });
+
+            // Resize map on window resize
+            window.addEventListener('resize', function() {
+                map.invalidateSize();
+            });
+        } catch (e) {
+            console.error('Error initializing map:', e);
+            document.getElementById('map').innerHTML =
+                '<p class="text-danger">Error loading map.</p>';
+        }
+    {% endif %}
+});
+</script>
+{% endblock %}

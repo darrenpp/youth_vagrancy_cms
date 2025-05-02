@@ -1,0 +1,59 @@
+{% extends 'base.html' %}
+{% block title %}Dashboard{% endblock %}
+{% block content %}
+<div class="content-header">
+    <h1>Dashboard</h1>
+</div>
+<div class="card">
+    <div class="card-header">
+        <a href="{% url 'add_record' %}" class="btn btn-success"><i class="fas fa-plus"></i> Add New Record</a>
+        <a href="{% url 'export_excel' %}" class="btn btn-primary"><i class="fas fa-file-excel"></i> Export to Excel</a>
+        <a href="{% url 'export_pdf' %}" class="btn btn-danger"><i class="fas fa-file-pdf"></i> Export to PDF</a>
+    </div>
+    <div class="card-body">
+        <table class="table table-bordered table-hover">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Name</th>
+                    <th>Age</th>
+                    <th>Gender</th>
+                    <th>Electorate</th>
+                    <th>Reason</th>
+                    <th>Date Recorded</th>
+                    <th>Image</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for record in records %}
+                <tr>
+                    <td>{{ record.id }}</td>
+                    <td>{{ record.name }}</td>
+                    <td>{{ record.age }}</td>
+                    <td>{{ record.gender }}</td>
+                    <td>{{ record.electorate }}</td>
+                    <td>{{ record.reason }}</td>
+                    <td>{{ record.date_recorded }}</td>
+                    <td>
+                        {% if record.image %}
+                            <img src="{{ record.image.url }}" alt="Image" style="max-width: 50%;">
+                        {% else %}
+                            No Image
+                        {% endif %}
+                    </td>
+                    <td>
+                        <a href="{% url 'edit_record' record.id %}" class="btn btn-primary btn-sm"><i class="fas fa-edit"></i> Edit</a>
+                        <a href="{% url 'delete_record' record.id %}" class="btn btn-danger btn-sm" onclick="return confirm('Are you sure?')"><i class="fas fa-trash"></i> Delete</a>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="9" class="text-center">No records found.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

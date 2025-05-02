@@ -1,0 +1,90 @@
+{% extends 'base.html' %}
+{% block title %}Add Record{% endblock %}
+{% block content %}
+<div class="content-header">
+    <h1>Add New Record</h1>
+</div>
+<div class="card">
+    <div class="card-body">
+        <form method="POST" enctype="multipart/form-data">
+            {% csrf_token %}
+            <div class="form-group">
+                <label for="name">Name</label>
+                <input type="text" class="form-control" id="name" name="name" required>
+            </div>
+            <div class="form-group">
+                <label for="age">Age</label>
+                <input type="number" class="form-control" id="age" name="age" required min="0">
+            </div>
+            <div class="form-group">
+                <label for="gender">Gender</label>
+                <select class="form-control" id="gender" name="gender" required>
+                    <option value="Male">Male</option>
+                    <option value="Female">Female</option>
+                    <option value="Other">Other</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="electorate">Electorate</label>
+                <select class="form-control" id="electorate" name="electorate" required>
+                    <option value="Moresby South">Moresby South</option>
+                    <option value="Moresby Northeast">Moresby Northeast</option>
+                    <option value="Moresby Northwest">Moresby Northwest</option>
+                    <option value="Motukoitabu">Motukoitabu</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="reason">Reason for Vagrancy</label>
+                <textarea class="form-control" id="reason" name="reason" required></textarea>
+            </div>
+            <div class="form-group">
+                <label for="date_recorded">Date Recorded</label>
+                <input type="date" class="form-control" id="date_recorded" name="date_recorded" required>
+            </div>
+            <div class="form-group">
+                <label for="image">Image</label>
+                <input type="file" class="form-control" id="image" name="image" accept="image/*" capture="camera">
+                <video id="video" width="100%" autoplay style="display:none;"></video>
+                <canvas id="canvas" style="display:none;"></canvas>
+                <button type="button" id="capture" class="btn btn-secondary mt-2" style="display:none;">Capture Photo</button>
+            </div>
+            <button type="submit" class="btn btn-success"><i class="fas fa-save"></i> Add Record</button>
+            <a href="{% url 'dashboard' %}" class="btn btn-secondary"><i class="fas fa-times"></i> Cancel</a>
+        </form>
+    </div>
+</div>
+
+<script>
+    const video = document.getElementById('video');
+    const canvas = document.getElementById('canvas');
+    const captureButton = document.getElementById('capture');
+    const imageInput = document.getElementById('image');
+
+    imageInput.addEventListener('change', function(e) {
+        if (e.target.files.length > 0 && e.target.files[0].type.startsWith('image/')) {
+            video.style.display = 'block';
+            captureButton.style.display = 'block';
+            navigator.mediaDevices.getUserMedia({ video: true })
+                .then(stream => {
+                    video.srcObject = stream;
+                })
+                .catch(err => console.error('Error accessing camera:', err));
+        }
+    });
+
+    captureButton.addEventListener('click', function() {
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        canvas.getContext('2d').drawImage(video, 0, 0);
+        canvas.toBlob(blob => {
+            const file = new File([blob], 'photo.jpg', { type: 'image/jpeg' });
+            const dataTransfer = new DataTransfer();
+            dataTransfer.items.add(file);
+            imageInput.files = dataTransfer.files;
+            video.srcObject.getTracks().forEach(track => track.stop());
+            video.style.display = 'none';
+            captureButton.style.display = 'none';
+        }, 'image/jpeg');
+    });
+</script>
+{% endblock %}

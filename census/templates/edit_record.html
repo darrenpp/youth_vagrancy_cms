@@ -1,0 +1,93 @@
+{% extends 'base.html' %}
+{% block title %}Edit Record{% endblock %}
+{% block content %}
+<div class="content-header">
+    <h1>Edit Record</h1>
+</div>
+<div class="card">
+    <div class="card-body">
+        <form method="POST" enctype="multipart/form-data">
+            {% csrf_token %}
+            <div class="form-group">
+                <label for="name">Name</label>
+                <input type="text" class="form-control" id="name" name="name" value="{{ record.name }}" required>
+            </div>
+            <div class="form-group">
+                <label for="age">Age</label>
+                <input type="number" class="form-control" id="age" name="age" value="{{ record.age }}" required min="0">
+            </div>
+            <div class="form-group">
+                <label for="gender">Gender</label>
+                <select class="form-control" id="gender" name="gender" required>
+                    <option value="Male" {% if record.gender == 'Male' %}selected{% endif %}>Male</option>
+                    <option value="Female" {% if record.gender == 'Female' %}selected{% endif %}>Female</option>
+                    <option value="Other" {% if record.gender == 'Other' %}selected{% endif %}>Other</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="electorate">Electorate</label>
+                <select class="form-control" id="electorate" name="electorate" required>
+                    <option value="Moresby South" {% if record.electorate == 'Moresby South' %}selected{% endif %}>Moresby South</option>
+                    <option value="Moresby Northeast" {% if record.electorate == 'Moresby Northeast' %}selected{% endif %}>Moresby Northeast</option>
+                    <option value="Moresby Northwest" {% if record.electorate == 'Moresby Northwest' %}selected{% endif %}>Moresby Northwest</option>
+                    <option value="Motukoitabu" {% if record.electorate == 'Motukoitabu' %}selected{% endif %}>Motukoitabu</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="reason">Reason for Vagrancy</label>
+                <textarea class="form-control" id="reason" name="reason" required>{{ record.reason }}</textarea>
+            </div>
+            <div class="form-group">
+                <label for="date_recorded">Date Recorded</label>
+                <input type="date" class="form-control" id="date_recorded" name="date_recorded" value="{{ record.date_recorded|date:'Y-m-d' }}" required>
+            </div>
+            <div class="form-group">
+                <label for="image">Image</label>
+                {% if record.image %}
+                    <img src="{{ record.image.url }}" alt="Current Image" style="max-width: 100px;">
+                {% endif %}
+                <input type="file" class="form-control" id="image" name="image" accept="image/*" capture="camera">
+                <video id="video" width="100%" autoplay style="display:none;"></video>
+                <canvas id="canvas" style="display:none;"></canvas>
+                <button type="button" id="capture" class="btn btn-secondary mt-2" style="display:none;">Capture Photo</button>
+            </div>
+            <button type="submit" class="btn btn-success"><i class="fas fa-save"></i> Update Record</button>
+            <a href="{% url 'dashboard' %}" class="btn btn-secondary"><i class="fas fa-times"></i> Cancel</a>
+        </form>
+    </div>
+</div>
+
+<script>
+    const video = document.getElementById('video');
+    const canvas = document.getElementById('canvas');
+    const captureButton = document.getElementById('capture');
+    const imageInput = document.getElementById('image');
+
+    imageInput.addEventListener('change', function(e) {
+        if (e.target.files.length > 0 && e.target.files[0].type.startsWith('image/')) {
+            video.style.display = 'block';
+            captureButton.style.display = 'block';
+            navigator.mediaDevices.getUserMedia({ video: true })
+                .then(stream => {
+                    video.srcObject = stream;
+                })
+                .catch(err => console.error('Error accessing camera:', err));
+        }
+    });
+
+    captureButton.addEventListener('click', function() {
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        canvas.getContext('2d').drawImage(video, 0, 0);
+        canvas.toBlob(blob => {
+            const file = new File([blob], 'photo.jpg', { type: 'image/jpeg' });
+            const dataTransfer = new DataTransfer();
+            dataTransfer.items.add(file);
+            imageInput.files = dataTransfer.files;
+            video.srcObject.getTracks().forEach(track => track.stop());
+            video.style.display = 'none';
+            captureButton.style.display = 'none';
+        }, 'image/jpeg');
+    });
+</script>
+{% endblock %}
